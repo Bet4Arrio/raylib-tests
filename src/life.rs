@@ -95,6 +95,22 @@ pub struct Cell {
     posx: i32,
     posy: i32,
 }
+
+pub struct GameOfLifeSeter {
+    pub h: i32,
+    pub w: i32,
+}
+
+impl Default for GameOfLifeSeter {
+    fn default() -> Self {
+        GameOfLifeSeter { h: 11, w: 11 }
+    }
+}
+impl GameOfLifeSeter {
+    #[allow(dead_code)]
+    pub fn run(self: &mut Self, _rl: &mut RaylibHandle, _thread: &RaylibThread) {}
+}
+
 pub struct GameOfLife {
     status: GameStatus,
     speed: i32,
@@ -187,6 +203,11 @@ impl GameOfLife {
         }
     }
 
+    fn draw_borders(self: &mut Self, d: &mut RaylibDrawHandle) {
+        let width = self.simulation.width * (self.cell_size + self.cell_gap);
+        let height = self.simulation.height * (self.cell_size + self.cell_gap);
+        d.draw_rectangle(self.x, self.y, width, height, Color::WHITE);
+    }
     pub fn run(self: &mut Self, rl: &mut RaylibHandle, thread: &RaylibThread) {
         if let Some(key) = rl.get_key_pressed() {
             self.handle_keypress(key, rl, thread);
@@ -195,11 +216,12 @@ impl GameOfLife {
 
         self.handle_mouse(rl, thread);
 
-        let w = rl.is_window_resized();
-        let h = rl.get_render_height();
+        let text = format!(
+            "Game of life spd {}/seq, {}x{}",
+            self.speed, self.simulation.width, self.simulation.height
+        );
         let mut d = rl.begin_drawing(thread);
-        let text = format!("Game of life spd {}/seq, {}x{}", self.speed, w, h);
-
+        self.draw_borders(&mut d);
         d.clear_background(Color::GRAY);
 
         d.draw_text("Press Q to quit", 12, 5, 20, Color::DARKGRAY);
