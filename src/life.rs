@@ -1,3 +1,4 @@
+use crate::ui::text_input::TextInput;
 use sola_raylib::prelude::*;
 
 use std::vec;
@@ -99,16 +100,48 @@ pub struct Cell {
 pub struct GameOfLifeSeter {
     pub h: i32,
     pub w: i32,
+    pub setuped: bool,
+    pub h_input: TextInput<i32>,
+    pub w_input: TextInput<i32>,
 }
 
 impl Default for GameOfLifeSeter {
     fn default() -> Self {
-        GameOfLifeSeter { h: 11, w: 11 }
+        GameOfLifeSeter {
+            h_input: TextInput::new(Rectangle::new(12.0, 50.0, 300.0, 25.0), 11),
+            w_input: TextInput::new(Rectangle::new(350.0, 50.0, 300.0, 25.0), 11),
+            setuped: false,
+            h: 11,
+            w: 11,
+        }
     }
 }
 impl GameOfLifeSeter {
-    #[allow(dead_code)]
-    pub fn run(self: &mut Self, _rl: &mut RaylibHandle, _thread: &RaylibThread) {}
+    fn get_ready(self: &mut Self) {
+        self.setuped = true
+    }
+    fn handle_keypress(self: &mut Self, button: KeyboardKey) {
+        match button {
+            KeyboardKey::KEY_L => {
+                self.get_ready();
+            }
+            _ => {}
+        }
+    }
+    pub fn run(self: &mut Self, rl: &mut RaylibHandle, thread: &RaylibThread) {
+        if let Some(key) = rl.get_key_pressed() {
+            self.handle_keypress(key);
+        }
+        self.h_input.update_value(rl);
+        self.w_input.update_value(rl);
+        let mut d = rl.begin_drawing(thread);
+        d.clear_background(Color::GRAY);
+        self.h_input.draw(&mut d);
+        self.w_input.draw(&mut d);
+    }
+    pub fn is_setuped(self: &mut Self) -> bool {
+        self.setuped
+    }
 }
 
 pub struct GameOfLife {

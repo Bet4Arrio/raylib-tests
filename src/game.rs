@@ -65,7 +65,12 @@ impl GameHub {
     }
     fn init_life(self: &mut Self) {
         if let SelectedGame::LifeSeter(seter) = &self.select_game {
-            self.select_game = SelectedGame::Life(GameOfLife::init(50, 60, seter.h, seter.w))
+            self.select_game = SelectedGame::Life(GameOfLife::init(
+                50,
+                60,
+                seter.h_input.get_val(),
+                seter.w_input.get_val(),
+            ))
         } else {
             self.select_game = SelectedGame::LifeSeter(GameOfLifeSeter::default())
         }
@@ -84,38 +89,14 @@ impl GameHub {
 
         d.draw_text("Press Q to quit", 12, 5, 20, Color::DARKGRAY);
         d.draw_text(
-            "Press 1 to intizalizete the Game of Life",
+            "Press L to intizalizete the Game of Life",
             12,
             30,
             20,
             Color::WHITE,
         );
-        if let SelectedGame::LifeSeter(seter) = &mut self.select_game {
-            // CheckCollisionPointRec(point, rec)
-            let h_rect = Rectangle::new(12.0, 50.0, 300.0, 25.0);
-            let w_rect = Rectangle::new(350.0, 50.0, 300.0, 25.0);
-            if h_rect.check_collision_point_rec(mouse_pos) {
-                let mut h = seter.h;
-                h = update_number(h, delet_press, char_press);
-                seter.h = h;
-                d.draw_rectangle_lines(12, 50, 300, 25, Color::BLACK);
-            } else {
-                d.draw_rectangle_lines(12, 50, 300, 25, Color::PINK);
-            }
-            let h_text = format!("H: {}", seter.h);
-            d.draw_text(&h_text, 12, 50, 20, Color::DARKGRAY);
-
-            if w_rect.check_collision_point_rec(mouse_pos) {
-                let mut w = seter.w;
-                w = update_number(w, delet_press, char_press);
-                seter.w = w;
-                d.draw_rectangle_lines(350, 50, 300, 25, Color::BLACK);
-            } else {
-                d.draw_rectangle_lines(350, 50, 300, 25, Color::PINK);
-            }
-            let w_text = format!("W: {}", seter.w);
-            d.draw_text(&w_text, 350, 50, 20, Color::DARKGRAY);
-        }
+        let teste_rec = Rectangle::new(12.0, 100.0, 300.0, 25.0);
+        d.gui_button(teste_rec, "AAAAA");
     }
 
     pub fn run(mut self: Self, rl: RaylibHandle, thread: RaylibThread) {
@@ -127,6 +108,12 @@ impl GameHub {
             match &mut self.select_game {
                 SelectedGame::Life(life) => {
                     life.run(rl, thread);
+                }
+                SelectedGame::LifeSeter(setter) => {
+                    setter.run(rl, thread);
+                    if setter.is_setuped() {
+                        self.init_life();
+                    }
                 }
                 _ => self.run_hub(rl, thread),
             }
