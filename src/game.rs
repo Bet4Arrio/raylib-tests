@@ -1,7 +1,8 @@
-use std::hash;
-
+use crate::core::traits::Component;
 use crate::life::{GameOfLife, GameOfLifeSeter};
+use crate::ui::button_input::ButtonInput;
 use sola_raylib::prelude::*;
+use std::hash;
 
 enum SelectedGame {
     Life(GameOfLife),
@@ -10,41 +11,17 @@ enum SelectedGame {
 }
 pub struct GameHub {
     select_game: SelectedGame,
+    start_life: ButtonInput,
 }
 
-fn update_number(actual: i32, delete: bool, charecter: Option<char>) -> i32 {
-    if !delete && charecter.is_none() {
-        return actual;
-    }
-    if delete {
-        return actual / 10;
-    }
-    if let Some(c) = charecter {
-        let plus = match c {
-            '1' => 1,
-            '2' => 2,
-            '3' => 3,
-            '4' => 4,
-            '5' => 5,
-            '6' => 6,
-            '7' => 7,
-            '8' => 8,
-            '9' => 9,
-            '0' => 0,
-            _ => -1,
-        };
-        print!("pressed : {c}");
-        if plus < 0 {
-            return actual;
-        }
-        return (actual * 10) + plus;
-    }
-    actual
-}
 impl GameHub {
     pub fn init() -> Self {
         GameHub {
             select_game: SelectedGame::None,
+            start_life: ButtonInput::new(
+                Rectangle::new(12.0, 100.0, 300.0, 25.0),
+                "Jogo da vida".to_string(),
+            ),
         }
     }
     fn handle_keypress(
@@ -80,9 +57,12 @@ impl GameHub {
         if let Some(key) = rl.get_key_pressed() {
             self.handle_keypress(key, rl, thread);
         }
-        let mouse_pos = rl.get_mouse_position();
-        let char_press = rl.get_char_pressed();
-        let delet_press = rl.is_key_pressed(KeyboardKey::KEY_BACKSPACE);
+
+        self.start_life.check(rl);
+        if self.start_life.is_clicked() {
+            self.init_life();
+        }
+
         let mut d = rl.begin_drawing(thread);
 
         d.clear_background(Color::GRAY);
@@ -95,8 +75,7 @@ impl GameHub {
             20,
             Color::WHITE,
         );
-        let teste_rec = Rectangle::new(12.0, 100.0, 300.0, 25.0);
-        d.gui_button(teste_rec, "AAAAA");
+        self.start_life.draw(&mut d);
     }
 
     pub fn run(mut self: Self, rl: RaylibHandle, thread: RaylibThread) {

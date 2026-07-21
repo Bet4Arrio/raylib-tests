@@ -1,3 +1,5 @@
+use crate::core::traits::Component;
+use crate::ui::button_input::ButtonInput;
 use crate::ui::text_input::TextInput;
 use sola_raylib::prelude::*;
 
@@ -103,6 +105,7 @@ pub struct GameOfLifeSeter {
     pub setuped: bool,
     pub h_input: TextInput<i32>,
     pub w_input: TextInput<i32>,
+    pub start_button: ButtonInput,
 }
 
 impl Default for GameOfLifeSeter {
@@ -110,6 +113,10 @@ impl Default for GameOfLifeSeter {
         GameOfLifeSeter {
             h_input: TextInput::new(Rectangle::new(12.0, 50.0, 300.0, 25.0), 11),
             w_input: TextInput::new(Rectangle::new(350.0, 50.0, 300.0, 25.0), 11),
+            start_button: ButtonInput::new(
+                Rectangle::new(150.0, 100.0, 100.0, 25.0),
+                "Iniciar jogo".to_string(),
+            ),
             setuped: false,
             h: 11,
             w: 11,
@@ -128,16 +135,22 @@ impl GameOfLifeSeter {
             _ => {}
         }
     }
+
     pub fn run(self: &mut Self, rl: &mut RaylibHandle, thread: &RaylibThread) {
         if let Some(key) = rl.get_key_pressed() {
             self.handle_keypress(key);
         }
         self.h_input.update_value(rl);
         self.w_input.update_value(rl);
+        self.start_button.check(rl);
+        if self.start_button.is_clicked() {
+            self.get_ready();
+        }
         let mut d = rl.begin_drawing(thread);
         d.clear_background(Color::GRAY);
         self.h_input.draw(&mut d);
         self.w_input.draw(&mut d);
+        self.start_button.draw(&mut d);
     }
     pub fn is_setuped(self: &mut Self) -> bool {
         self.setuped

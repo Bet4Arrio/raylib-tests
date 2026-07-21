@@ -1,6 +1,6 @@
-use std::char;
-
+use crate::core::traits::Component;
 use sola_raylib::prelude::*;
+use std::char;
 
 pub struct TextInput<T> {
     rect: Rectangle,
@@ -69,7 +69,21 @@ impl<T: Copy + RaylibTextInput + ToString> TextInput<T> {
         }
         self.selected
     }
-    pub fn draw(self: &Self, d: &mut RaylibDrawHandle) {
+}
+
+impl<T: Copy + RaylibTextInput + ToString> Component for TextInput<T> {
+    fn check(&mut self, rl: &mut RaylibHandle) {
+        let mouse_pos = rl.get_mouse_position();
+        if rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT) {
+            if self.rect.check_collision_point_rec(mouse_pos) {
+                self.selected = !self.selected;
+            } else {
+                self.selected = false;
+            }
+        }
+    }
+
+    fn draw(self: &Self, d: &mut RaylibDrawHandle) {
         if self.selected {
             d.draw_rectangle_rounded_lines(self.rect, 0.0, 1, Color::BLACK);
         } else {
