@@ -10,6 +10,6 @@ fn main() {
         .highdpi()
         .resizable()
         .build();
-    let game = game::GameHub::init();
+    let game = game::GameHub::init(rl.get_screen_width(), rl.get_screen_height());
     game.run(rl, thread);
 }

@@ -2,7 +2,6 @@ use crate::core::traits::Component;
 use crate::ui::button_input::ButtonInput;
 use crate::ui::text_input::TextInput;
 use sola_raylib::prelude::*;
-
 use std::vec;
 
 #[derive(Clone)]
@@ -93,10 +92,10 @@ enum GameStatus {
     Run,
 }
 
+#[derive(Debug, Clone, Copy)]
 pub struct Cell {
     idx: usize,
-    posx: i32,
-    posy: i32,
+    rect: Rectangle,
 }
 
 pub struct GameOfLifeSeter {
@@ -160,17 +159,17 @@ impl GameOfLifeSeter {
 pub struct GameOfLife {
     status: GameStatus,
     speed: i32,
-    x: i32,
-    y: i32,
-    cell_size: i32,
-    cell_gap: i32,
+    width: i32,
+    height: i32,
     simulation: Simulation,
     entities: Vec<Cell>,
+    camera: Camera2D,
     last_updt: f64,
 }
 
 impl GameOfLife {
-    pub fn init(x: i32, y: i32, mat_h: i32, mat_w: i32) -> Self {
+    pub fn init(width: i32, height: i32, mat_h: i32, mat_w: i32) -> Self {
+        let padding: i32 = 100;
         let cell_size: i32 = 10;
         let cell_gap: i32 = 1;
         let simu = Simulation::init(mat_h, mat_w);
@@ -182,39 +181,41 @@ impl GameOfLife {
                 let posx = (cell_size + cell_gap) * col;
                 Cell {
                     idx: i as usize,
-                    posx: x + posx,
-                    posy: y + posy,
+                    rect: Rectangle {
+                        x: (posx + padding) as f32,
+                        y: (posy + padding) as f32,
+                        width: cell_size as f32,
+                        height: cell_size as f32,
+                    },
                 }
             })
             .collect();
+        let camera = Camera2D {
+            target: Vector2 {
+                x: width as f32 / 2.0,
+                y: height as f32 / 2.0,
+            }, // Centralizado no jogador
+            offset: Vector2 {
+                x: width as f32 / 2.0,
+                y: height as f32 / 2.0,
+            }, // Centralizado na tela (800x600)
+            rotation: 0.0,
+            zoom: 1.0,
+        };
         GameOfLife {
             status: GameStatus::Idle,
             speed: 1,
             entities: ent,
             simulation: simu,
             last_updt: 0.0,
-            x: x,
-            y: y,
-            cell_gap,
-            cell_size,
+            camera,
+            width,
+            height,
         }
     }
 
     fn handle_mouse(self: &mut Self, rl: &mut RaylibHandle, mut _thread: &RaylibThread) {
-        if rl.is_mouse_button_down(MouseButton::MOUSE_BUTTON_LEFT) {
-            let mouse = rl.get_mouse_position();
-            let x = mouse.x as i32;
-            let y = mouse.y as i32;
-            for cell in &self.entities {
-                if x > cell.posx
-                    && y > cell.posy
-                    && x < (cell.posx + self.cell_size)
-                    && y < (cell.posy + self.cell_size)
-                {
-                    self.simulation.matrix[cell.idx] = !self.simulation.matrix[cell.idx]
-                }
-            }
-        }
+        todo!()
     }
 
     fn handle_keypress(
@@ -242,17 +243,36 @@ impl GameOfLife {
                     self.speed = 1;
                 }
             }
-            KeyboardKey::KEY_S => {
+            KeyboardKey::KEY_N => {
                 self.simulation.simulate();
             }
+            KeyboardKey::KEY_W => {
+                if self.camera.offset.y < 0.0 {
+                    self.camera.offset.y = 0.0;
+                } else {
+                    self.camera.offset += Vector2 { x: 0.0, y: -10.0 };
+                }
+            }
+            KeyboardKey::KEY_S => {
+                self.camera.offset += Vector2 { x: 0.0, y: 10.0 };
+            }
+            KeyboardKey::KEY_A => {
+                if self.camera.offset.x < 0.0 {
+                    self.camera.offset.x = 0.0;
+                } else {
+                    self.camera.offset += Vector2 { x: -10.0, y: 0.0 };
+                }
+            }
+            KeyboardKey::KEY_D => {
+                if self.camera.offset.x > 0.0 {
+                    self.camera.offset.x = 0.0;
+                } else {
+                    self.camera.offset += Vector2 { x: 10.0, y: 0.0 };
+                }
+            }
+
             _ => {}
         }
-    }
-
-    fn draw_borders(self: &mut Self, d: &mut RaylibDrawHandle) {
-        let width = self.simulation.width * (self.cell_size + self.cell_gap);
-        let height = self.simulation.height * (self.cell_size + self.cell_gap);
-        d.draw_rectangle(self.x, self.y, width, height, Color::WHITE);
     }
     pub fn run(self: &mut Self, rl: &mut RaylibHandle, thread: &RaylibThread) {
         if let Some(key) = rl.get_key_pressed() {
@@ -260,15 +280,27 @@ impl GameOfLife {
         }
         let tim = rl.get_time();
 
-        self.handle_mouse(rl, thread);
+        // self.handle_mouse(rl, thread);
 
         let text = format!(
             "Game of life spd {}/seq, {}x{}",
             self.speed, self.simulation.width, self.simulation.height
         );
         let mut d = rl.begin_drawing(thread);
-        self.draw_borders(&mut d);
         d.clear_background(Color::GRAY);
+
+        {
+            let mut mode2d = d.begin_mode2D(self.camera);
+            // Desenhe seus objetos, tiles e jogador aqui
+            // ex: mode2d.draw_circle_v(player_pos, 20.0, Color::RED);
+            for cell in &self.entities {
+                if self.simulation.matrix[cell.idx] {
+                    mode2d.draw_rectangle_rec(cell.rect, Color::CYAN);
+                } else {
+                    mode2d.draw_rectangle_rec(cell.rect, Color::DARKCYAN);
+                }
+            }
+        }
 
         d.draw_text("Press Q to quit", 12, 5, 20, Color::DARKGRAY);
 
@@ -285,25 +317,6 @@ impl GameOfLife {
                     self.simulation.simulate();
                 }
                 d.draw_text("Press ENTER TO STOP ", 200, 5, 20, Color::RED);
-            }
-        }
-        for cell in &self.entities {
-            if self.simulation.matrix[cell.idx] {
-                d.draw_rectangle(
-                    cell.posx,
-                    cell.posy,
-                    self.cell_size,
-                    self.cell_size,
-                    Color::CYAN,
-                );
-            } else {
-                d.draw_rectangle(
-                    cell.posx,
-                    cell.posy,
-                    self.cell_size,
-                    self.cell_size,
-                    Color::DARKCYAN,
-                );
             }
         }
     }

@@ -12,16 +12,20 @@ enum SelectedGame {
 pub struct GameHub {
     select_game: SelectedGame,
     start_life: ButtonInput,
+    width: i32,
+    height: i32,
 }
 
 impl GameHub {
-    pub fn init() -> Self {
+    pub fn init(w: i32, h: i32) -> Self {
         GameHub {
             select_game: SelectedGame::None,
             start_life: ButtonInput::new(
                 Rectangle::new(12.0, 100.0, 300.0, 25.0),
                 "Jogo da vida".to_string(),
             ),
+            width: w,
+            height: h,
         }
     }
     fn handle_keypress(
@@ -40,11 +44,15 @@ impl GameHub {
             _ => {}
         }
     }
+    fn handle_resize(self: &mut Self, w: i32, h: i32) {
+        self.width = w;
+        self.height = h;
+    }
     fn init_life(self: &mut Self) {
         if let SelectedGame::LifeSeter(seter) = &self.select_game {
             self.select_game = SelectedGame::Life(GameOfLife::init(
-                50,
-                60,
+                self.width,
+                self.height,
                 seter.h_input.get_val(),
                 seter.w_input.get_val(),
             ))
@@ -54,6 +62,9 @@ impl GameHub {
     }
 
     fn run_hub(self: &mut Self, rl: &mut RaylibHandle, thread: &RaylibThread) {
+        if rl.is_window_resized() {
+            self.handle_resize(rl.get_screen_width(), rl.get_screen_height());
+        }
         if let Some(key) = rl.get_key_pressed() {
             self.handle_keypress(key, rl, thread);
         }

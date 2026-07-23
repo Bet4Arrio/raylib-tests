@@ -45,13 +45,13 @@ impl Component for ButtonInput {
 
     fn draw(self: &Self, d: &mut RaylibDrawHandle) {
         let color_bg = match self.status {
-            ButtonStatus::Idle => Color::DARKRED,
+            ButtonStatus::Idle => Color::DARKPURPLE,
             _ => Color::WHITE,
         };
 
         let color_txt = match self.status {
             ButtonStatus::Idle => Color::WHITE,
-            _ => Color::DARKRED,
+            _ => Color::DARKPURPLE,
         };
         d.draw_rectangle_rounded(self.rect, 0.0, 1, color_bg);
         let text_width = d.measure_text(&self.text, 12);
